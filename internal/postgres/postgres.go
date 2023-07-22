@@ -1,10 +1,11 @@
-package components
+package postgres
 
 import (
 	"database/sql"
 	"errors"
 	"strconv"
 
+	"github.com/bikeshack/dcim/pkg/components"
 	"github.com/google/uuid"
 
 	"github.com/jmoiron/sqlx"
@@ -13,7 +14,7 @@ import (
 )
 
 // PGInsertComponent inserts a component into the database and returns the uuid generated within the database
-func PGInsertComponent(db *sqlx.DB, component *Component) (string, error) {
+func PGInsertComponent(db *sqlx.DB, component *components.Component) (string, error) {
 
 	// Insert the component into the database and return the uuid generated within the database
 	query, args, err := sqlx.Named("INSERT INTO components (xname, class, arch, net_type, role, flag) VALUES (:xname, :class, :arch, :net_type, :role, :flag) RETURNING uid", component)
@@ -21,9 +22,11 @@ func PGInsertComponent(db *sqlx.DB, component *Component) (string, error) {
 		log.Info("Error preparing named query:", err)
 		return "", err
 	}
+	query = sqlx.Rebind(sqlx.DOLLAR, query) //only if postgres
 	row := db.QueryRowx(query, args...)
 	err = row.Scan(&component.Uid)
 	if err != nil {
+		// TODO: Figure out how to handle the difference between a user error and a server error
 		log.Debug("Error executing query: "+query+"\n  -", err)
 		log.Debug("Args: ", args)
 		return "", err
@@ -31,7 +34,7 @@ func PGInsertComponent(db *sqlx.DB, component *Component) (string, error) {
 	return component.Uid.String(), err
 }
 
-func PGUpdateComponent(db *sqlx.DB, component *Component) error {
+func PGUpdateComponent(db *sqlx.DB, component *components.Component) error {
 	result, err := db.NamedExec("UPDATE components SET (class, arch, net_type, role, flag) = (:Class, :Arch, :NetType, :Role, :Flag) WHERE id = :ID", component)
 	if err != nil {
 		return err
@@ -62,8 +65,8 @@ func PGDeleteComponent(db *sqlx.DB, id int) error {
 }
 
 // PGGetComponent returns a single component from the database based on the id or xname
-func PGGetComponent(db *sqlx.DB, id string) (*Component, error) {
-	component := &Component{}
+func PGGetComponent(db *sqlx.DB, id string) (*components.Component, error) {
+	component := &components.Component{}
 	// See if the id looks like a uuid
 	_, err := uuid.Parse(id)
 	if err == nil {

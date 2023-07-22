@@ -14,7 +14,7 @@ import (
 )
 
 // PGInsertComponent inserts a component into the database and returns the uuid generated within the database
-func PGInsertComponent(db *sqlx.DB, component *components.Component) (string, error) {
+func InsertComponent(db *sqlx.DB, component *components.Component) (string, error) {
 
 	// Insert the component into the database and return the uuid generated within the database
 	query, args, err := sqlx.Named("INSERT INTO components (xname, class, arch, net_type, role, flag) VALUES (:xname, :class, :arch, :net_type, :role, :flag) RETURNING uid", component)
@@ -34,7 +34,7 @@ func PGInsertComponent(db *sqlx.DB, component *components.Component) (string, er
 	return component.Uid.String(), err
 }
 
-func PGUpdateComponent(db *sqlx.DB, component *components.Component) error {
+func UpdateComponent(db *sqlx.DB, component *components.Component) error {
 	result, err := db.NamedExec("UPDATE components SET (class, arch, net_type, role, flag) = (:Class, :Arch, :NetType, :Role, :Flag) WHERE id = :ID", component)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func PGUpdateComponent(db *sqlx.DB, component *components.Component) error {
 	}
 }
 
-func PGDeleteComponent(db *sqlx.DB, id int) error {
+func DeleteComponent(db *sqlx.DB, id int) error {
 	_, err := db.Exec("DELETE FROM components WHERE id = $1", id)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func PGDeleteComponent(db *sqlx.DB, id int) error {
 }
 
 // PGGetComponent returns a single component from the database based on the id or xname
-func PGGetComponent(db *sqlx.DB, id string) (*components.Component, error) {
+func GetComponent(db *sqlx.DB, id string) (*components.Component, error) {
 	component := &components.Component{}
 	// See if the id looks like a uuid
 	_, err := uuid.Parse(id)

@@ -42,7 +42,7 @@ func (s *ComponentService) CreateComponent(c *gin.Context) {
 		})
 		return
 	}
-	uid, err := postgres.PGInsertComponent(s.DB, component)
+	uid, err := postgres.InsertComponent(s.DB, component)
 	log.Debug("UID: ", uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -55,7 +55,7 @@ func (s *ComponentService) CreateComponent(c *gin.Context) {
 }
 
 func (s *ComponentService) ReadComponent(c *gin.Context) {
-	component, err := postgres.PGGetComponent(s.DB, c.Param("id"))
+	component, err := postgres.GetComponent(s.DB, c.Param("id"))
 	if err != nil {
 		c.JSON(404, gin.H{
 			"error": "Could not find component: " + err.Error(),
@@ -88,7 +88,7 @@ func (s *ComponentService) ReplaceComponent(c *gin.Context) {
 		})
 		return
 	}
-	err = postgres.PGUpdateComponent(s.DB, updateComponent)
+	err = postgres.UpdateComponent(s.DB, updateComponent)
 	if err != nil {
 		c.JSON(404, gin.H{
 			"error": "Could not find component: " + err.Error(),

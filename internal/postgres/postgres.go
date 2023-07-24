@@ -56,7 +56,8 @@ func UpdateComponent(db *sqlx.DB, component *components.Component) error {
 	}
 }
 
-func DeleteComponent(db *sqlx.DB, id int) error {
+func DeleteComponent(db *sqlx.DB, id string) error {
+
 	_, err := db.Exec("DELETE FROM components WHERE id = $1", id)
 	if err != nil {
 		return err

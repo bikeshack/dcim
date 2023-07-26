@@ -32,6 +32,13 @@ type Component struct {
 	Locked              bool      `json:"locked,omitempty" db:"locked"`
 }
 
+type ComponentDatabase interface {
+	InsertComponent(component *Component) (string, error)
+	UpdateComponent(component *Component) error
+	DeleteComponent(id string) error
+	GetComponent(id string) (*Component, error)
+}
+
 // Component Class describes the three types of cabinets that HPE ships.  We store them in all lowercase.
 var validComponentClasses = [...]string{
 	"river",

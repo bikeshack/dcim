@@ -4,12 +4,30 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/alexlovelltroy/chassis"
 	"github.com/bikeshack/dcim/internal/postgres"
 	"github.com/bikeshack/dcim/pkg/components"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
+
+type ComponentService struct {
+	*chassis.Microservice
+	CDB components.ComponentDatabase
+}
+
+type ComponentServiceConfig struct {
+	chassis.MicroserviceConfig
+	parallelism int
+}
+
+func NewComponentService(cfg *ComponentServiceConfig) *ComponentService {
+	service := ComponentService{
+		Microservice: chassis.NewMicroservice(cfg),
+	}
+	return &service
+}
 
 func (s *ComponentService) CreateComponent(c *gin.Context) {
 	// Create a new empty component
@@ -21,15 +39,16 @@ func (s *ComponentService) CreateComponent(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Could not parse JSON: " + err.Error(),
 		})
+		return
 	}
 	// Validate the component
 	if err = component.Validate(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"error": "Could not validate component: " + err.Error(),
 		})
 		return
 	}
-	uid, err := postgres.InsertComponent(s.DB, component)
+	uid, err := s.CDB.InsertComponent(component)
 	log.Debug("UID: ", uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -42,7 +61,9 @@ func (s *ComponentService) CreateComponent(c *gin.Context) {
 }
 
 func (s *ComponentService) ReadComponent(c *gin.Context) {
-	component, err := postgres.GetComponent(s.DB, c.Param("id"))
+	pcd := &postgres.PostgresComponentDatabase{DB: s.DB}
+
+	component, err := pcd.GetComponent(c.Param("id"))
 	switch err {
 
 	case nil: // We found it
@@ -77,7 +98,9 @@ func (s *ComponentService) ReplaceComponent(c *gin.Context) {
 		})
 		return
 	}
-	err = postgres.UpdateComponent(s.DB, updateComponent)
+	pcd := &postgres.PostgresComponentDatabase{DB: s.DB}
+
+	err = pcd.UpdateComponent(updateComponent)
 	switch err {
 	case nil: // It worked!
 		c.JSON(200, gin.H{
@@ -89,11 +112,12 @@ func (s *ComponentService) ReplaceComponent(c *gin.Context) {
 		})
 
 	}
-
 }
 
 func (s *ComponentService) DeleteComponent(c *gin.Context) {
-	err := postgres.DeleteComponent(s.DB, c.Param("id"))
+	pcd := &postgres.PostgresComponentDatabase{DB: s.DB}
+
+	err := pcd.DeleteComponent(c.Param("id"))
 	switch err {
 	case nil:
 

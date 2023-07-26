@@ -13,8 +13,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// PGInsertComponent inserts a component into the database and returns the uuid generated within the database
-func InsertComponent(db *sqlx.DB, component *components.Component) (string, error) {
+type PostgresComponentDatabase struct {
+	DB *sqlx.DB
+}
+
+// InsertComponent inserts a component into the database and returns the uuid generated within the database
+func (pcd *PostgresComponentDatabase) InsertComponent(component *components.Component) (string, error) {
 
 	// Insert the component into the database and return the uuid generated within the database
 	query, args, err := sqlx.Named("INSERT INTO components (xname, class, arch, net_type, role, flag) VALUES (:xname, :class, :arch, :net_type, :role, :flag) RETURNING uid", component)
@@ -23,7 +27,7 @@ func InsertComponent(db *sqlx.DB, component *components.Component) (string, erro
 		return "", err
 	}
 	query = sqlx.Rebind(sqlx.DOLLAR, query) //only if postgres
-	row := db.QueryRowx(query, args...)
+	row := pcd.DB.QueryRowx(query, args...)
 	err = row.Scan(&component.Uid)
 	if err != nil {
 		// TODO: Figure out how to handle the difference between a user error and a server error
@@ -34,8 +38,8 @@ func InsertComponent(db *sqlx.DB, component *components.Component) (string, erro
 	return component.Uid.String(), err
 }
 
-func UpdateComponent(db *sqlx.DB, component *components.Component) error {
-	result, err := db.NamedExec("UPDATE components SET (class, arch, net_type, role, flag) = (:Class, :Arch, :NetType, :Role, :Flag) WHERE id = :ID", component)
+func (pcd *PostgresComponentDatabase) UpdateComponent(component *components.Component) error {
+	result, err := pcd.DB.NamedExec("UPDATE components SET (class, arch, net_type, role, flag) = (:Class, :Arch, :NetType, :Role, :Flag) WHERE id = :ID", component)
 	if err != nil {
 		return err
 	}
@@ -56,9 +60,9 @@ func UpdateComponent(db *sqlx.DB, component *components.Component) error {
 	}
 }
 
-func DeleteComponent(db *sqlx.DB, id string) error {
+func (pcd *PostgresComponentDatabase) DeleteComponent(id string) error {
 
-	_, err := db.Exec("DELETE FROM components WHERE id = $1", id)
+	_, err := pcd.DB.Exec("DELETE FROM components WHERE id = $1", id)
 	if err != nil {
 		return err
 	}
@@ -66,14 +70,14 @@ func DeleteComponent(db *sqlx.DB, id string) error {
 }
 
 // PGGetComponent returns a single component from the database based on the id or xname
-func GetComponent(db *sqlx.DB, id string) (*components.Component, error) {
+func (pcd *PostgresComponentDatabase) GetComponent(id string) (*components.Component, error) {
 	component := &components.Component{}
 	// See if the id looks like a uuid
 	_, err := uuid.Parse(id)
 	if err == nil {
 		// lack of an error means this is a uuid
 		log.Debug("Treating id as a uuid:" + id)
-		err = db.Get(component, "SELECT uid, xname, class, arch, net_type, role, flag FROM components WHERE id = $1", id)
+		err = pcd.DB.Get(component, "SELECT uid, xname, class, arch, net_type, role, flag FROM components WHERE id = $1", id)
 		// this can throw all kinds of errors.  sql.ErrNoRows is an interesting one.  Bubble them all up.
 		if err != nil {
 			return nil, err
@@ -83,7 +87,7 @@ func GetComponent(db *sqlx.DB, id string) (*components.Component, error) {
 	}
 	// Now that we know id isn't a uuid, we can assume it is an xname
 	log.Debug("Treating id as an xname:" + id)
-	err = db.Get(component, "SELECT uid, xname, class, arch, net_type, role, flag FROM components WHERE xname = $1", id)
+	err = pcd.DB.Get(component, "SELECT uid, xname, class, arch, net_type, role, flag FROM components WHERE xname = $1", id)
 	// this can throw all kinds of errors.  sql.ErrNoRows is an interesting one.  Bubble them all up.
 	if err != nil {
 		return nil, err

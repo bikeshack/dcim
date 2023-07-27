@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/alexlovelltroy/chassis"
-	"github.com/bikeshack/dcim/internal/postgres"
 	"github.com/bikeshack/dcim/pkg/components"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -33,7 +32,7 @@ func (s *ComponentService) CreateComponent(c *gin.Context) {
 	// Create a new empty component
 	component := &components.Component{}
 	// Bind the JSON data to the component
-	err := c.BindJSON(component)
+	err := c.BindJSON(component) // This aborts with 400 with any error
 	log.Debug("Component: ", component)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -61,9 +60,13 @@ func (s *ComponentService) CreateComponent(c *gin.Context) {
 }
 
 func (s *ComponentService) ReadComponent(c *gin.Context) {
-	pcd := &postgres.PostgresComponentDatabase{DB: s.DB}
-
-	component, err := pcd.GetComponent(c.Param("id"))
+	if _, err := uuid.Parse(c.Param("id")); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid UUID: " + err.Error(),
+		})
+		return
+	}
+	component, err := s.CDB.GetComponent(c.Param("id"))
 	switch err {
 
 	case nil: // We found it
@@ -84,9 +87,9 @@ func (s *ComponentService) ReadComponent(c *gin.Context) {
 func (s *ComponentService) ReplaceComponent(c *gin.Context) {
 	updateComponent := &components.Component{}
 	// Bind the JSON data to the component
-	err := c.BindJSON(updateComponent)
+	err := c.BindJSON(updateComponent) // This aborts with 400 with any error
 	if err != nil {
-		c.JSON(http.StatusNotAcceptable, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Could not parse JSON: " + err.Error(),
 		})
 		return
@@ -98,29 +101,32 @@ func (s *ComponentService) ReplaceComponent(c *gin.Context) {
 		})
 		return
 	}
-	pcd := &postgres.PostgresComponentDatabase{DB: s.DB}
 
-	err = pcd.UpdateComponent(updateComponent)
+	err = s.CDB.UpdateComponent(updateComponent)
 	switch err {
 	case nil: // It worked!
 		c.JSON(200, gin.H{
 			"component": updateComponent,
 		})
+		return
 	default:
 		c.JSON(404, gin.H{
 			"error": "Could not find component: " + err.Error(),
 		})
-
 	}
 }
 
 func (s *ComponentService) DeleteComponent(c *gin.Context) {
-	pcd := &postgres.PostgresComponentDatabase{DB: s.DB}
-
-	err := pcd.DeleteComponent(c.Param("id"))
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid UUID: " + err.Error(),
+		})
+		return
+	}
+	err = s.CDB.DeleteComponent(id.String())
 	switch err {
 	case nil:
-
 		c.JSON(http.StatusOK, gin.H{
 			"message": c.Param("id") + " deleted",
 		})

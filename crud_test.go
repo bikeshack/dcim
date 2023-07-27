@@ -72,41 +72,50 @@ func TestCreateComponent(t *testing.T) {
 func TestReadComponentHandler(t *testing.T) {
 	// Create a new Gin router and set the handler
 	r := gin.Default()
-	componentService := &ComponentService{} // Assuming you have initialized ComponentService correctly
+	db := &mockPostgresComponentDatabase{}
+	componentService := &ComponentService{
+		CDB: db,
+	} // Assuming you have initialized ComponentService correctly
 	r.GET("/read/:id", componentService.ReadComponent)
 
 	// Test case: Component found
-	req, _ := http.NewRequest("GET", "/read/1", nil)
+	req, _ := http.NewRequest("GET", "/read/"+uuid.NewString(), nil)
 	resp := httptest.NewRecorder()
 	r.ServeHTTP(resp, req)
 
-	assert.Equal(t, http.StatusOK, resp.Code)
+	if !assert.Equal(t, http.StatusOK, resp.Code) {
+		fmt.Println(resp.Body)
+	}
 	// Additional assertions based on the response body or any other expected behavior
 
-	// Test case: Component not found
-	req, _ = http.NewRequest("GET", "/read/non_existent_id", nil)
+	// Test case: Invalid UUID
+	req, _ = http.NewRequest("GET", "/read/not_a_uuid", nil)
 	resp = httptest.NewRecorder()
 	r.ServeHTTP(resp, req)
 
-	assert.Equal(t, http.StatusNotFound, resp.Code)
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
 	// Additional assertions based on the response body or any other expected behavior
 }
 
 func TestReplaceComponentHandler(t *testing.T) {
 	// Create a new Gin router and set the handler
 	r := gin.Default()
-	componentService := &ComponentService{} // Assuming you have initialized ComponentService correctly
+	db := &mockPostgresComponentDatabase{}
+	componentService := &ComponentService{
+		CDB: db,
+	} // Assuming you have initialized ComponentService correctly
 	r.PUT("/replace", componentService.ReplaceComponent)
 
 	// Test case: Successful update
-	payload := `{"id": 1, "name": "Updated Component A", "description": "This is the updated component A"}`
+	payload := `{"xname": "x3000b7n3", "role": "compute", "class": "river", "arch": "x86_64", "net_type": "ethernet", "flag": "ok"}`
 	req, _ := http.NewRequest("PUT", "/replace", strings.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 	r.ServeHTTP(resp, req)
 
-	assert.Equal(t, http.StatusOK, resp.Code)
-	// Additional assertions based on the response body or any other expected behavior
+	if !assert.Equal(t, http.StatusOK, resp.Code) {
+		fmt.Println(resp.Body)
+	}
 
 	// Test case: Invalid JSON payload
 	req, _ = http.NewRequest("PUT", "/replace", strings.NewReader("invalid-json"))
@@ -114,18 +123,23 @@ func TestReplaceComponentHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	r.ServeHTTP(resp, req)
 
-	assert.Equal(t, http.StatusNotAcceptable, resp.Code)
+	if !assert.Equal(t, http.StatusBadRequest, resp.Code) {
+		fmt.Println(resp.Body)
+	}
 	// Additional assertions based on the response body or any other expected behavior
 }
 
 func TestDeleteComponentHandler(t *testing.T) {
 	// Create a new Gin router and set the handler
 	r := gin.Default()
-	componentService := &ComponentService{} // Assuming you have initialized ComponentService correctly
+	db := &mockPostgresComponentDatabase{}
+	componentService := &ComponentService{
+		CDB: db,
+	} // Assuming you have initialized ComponentService correctly
 	r.DELETE("/delete/:id", componentService.DeleteComponent)
 
 	// Test case: Successful deletion
-	req, _ := http.NewRequest("DELETE", "/delete/1", nil)
+	req, _ := http.NewRequest("DELETE", "/delete/"+uuid.NewString(), nil)
 	resp := httptest.NewRecorder()
 	r.ServeHTTP(resp, req)
 
@@ -137,6 +151,6 @@ func TestDeleteComponentHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	r.ServeHTTP(resp, req)
 
-	assert.Equal(t, http.StatusNotFound, resp.Code)
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
 	// Additional assertions based on the response body or any other expected behavior
 }

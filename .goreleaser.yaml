@@ -16,12 +16,15 @@ archives:
         format: zip
 dockers:
   - image_templates:
-    - "ghcr.io/golang-templates/seed:latest"
-    - "ghcr.io/golang-templates/seed:{{ .Major }}"
-    - "ghcr.io/golang-templates/seed:{{ .Major }}.{{ .Minor }}"
-    - "ghcr.io/golang-templates/seed:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    - "bikeshack/dcim:latest"
+    - "bikeshack/dcim:{{ .Major }}"
+    - "bikeshack/dcim:{{ .Major }}.{{ .Minor }}"
+    - "bikeshack/dcim:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    dockerfile: goreleaser.Dockerfile
     build_flag_templates:
     - "--pull"
+    - "--no-cache"
+    - "--build-arg=REGISTRY_HOST=docker.io/library/"
     # OCI annotations: https://github.com/opencontainers/image-spec/blob/main/annotations.md
     - "--label=org.opencontainers.image.created={{.Date}}"
     - "--label=org.opencontainers.image.name={{.ProjectName}}"

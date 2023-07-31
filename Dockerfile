@@ -65,6 +65,7 @@ LABEL description org.label-schema.description="CSM Data Center Infrastructure M
 LABEL url org.label-schema.url="https://bikeshack.dev/dcim"
 LABEL vcs-url org.label-schema.vcs-url="https://github.com/bikeshack/dcim" 
 
+COPY migrations /migrations
 COPY --from=builder /dcim /bin/dcim
 RUN apk add --no-cache tini
 # Tini is now available at /sbin/tini

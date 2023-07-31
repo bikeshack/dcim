@@ -36,7 +36,7 @@ RUN set -ex \
 RUN go env -w GO111MODULE=on
 
 ## Copy your code into the container
-COPY migrations $GOPATH/src/${GITHUB_REPO}/migrations
+COPY migrations /migrations
 COPY internal $GOPATH/src/${GITHUB_REPO}/internal
 COPY *.go $GOPATH/src/${GITHUB_REPO}/
 COPY pkg $GOPATH/src/${GITHUB_REPO}/pkg

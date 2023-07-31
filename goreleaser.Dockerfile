@@ -20,6 +20,7 @@ LABEL url org.label-schema.url="https://bikeshack.dev/dcim"
 LABEL vcs-url org.label-schema.vcs-url="https://github.com/bikeshack/dcim" 
 
 COPY dcim /bin/dcim
+COPY migrations /migrations
 RUN apk add --no-cache tini
 # Tini is now available at /sbin/tini
 ENTRYPOINT ["/sbin/tini", "--"]

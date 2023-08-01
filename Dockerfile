@@ -31,12 +31,12 @@ ARG buildDate
 RUN set -ex \
     && apk -U upgrade \
     && apk add build-base
+RUN apk add --no-cache upx
 
 # Establish a go environment
 RUN go env -w GO111MODULE=on
 
 ## Copy your code into the container
-COPY migrations /migrations
 COPY internal $GOPATH/src/${GITHUB_REPO}/internal
 COPY *.go $GOPATH/src/${GITHUB_REPO}/
 COPY pkg $GOPATH/src/${GITHUB_REPO}/pkg
@@ -47,7 +47,8 @@ COPY go.sum $GOPATH/src/${GITHUB_REPO}/
 ENV CGO_ENABLED=0 GOOS=linux ARCH=amd64
 RUN set -ex \
     && cd $GOPATH/src/${GITHUB_REPO} \
-    && go build -ldflags="-s -w" -tags=containers -o /dcim .
+    && go build -ldflags="-s -w" -tags=containers -o /dcim . \
+    && upx /dcim # Compress the binary --brute doesn't buy us much
 
 # Final stage is the actual container we will run
 FROM ${REGISTRY_HOST}alpine:3.15
@@ -65,7 +66,7 @@ LABEL description org.label-schema.description="CSM Data Center Infrastructure M
 LABEL url org.label-schema.url="https://bikeshack.dev/dcim"
 LABEL vcs-url org.label-schema.vcs-url="https://github.com/bikeshack/dcim" 
 
-COPY migrations /migrations
+VOLUME /migrations
 COPY --from=builder /dcim /bin/dcim
 RUN apk add --no-cache tini
 # Tini is now available at /sbin/tini

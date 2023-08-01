@@ -1,10 +1,10 @@
 # This dockerfile is just for gorleaser https://goreleaser.com/errors/docker-build/
 # We expect this to be passed in as a build parameter, but fall back to the algol60 registry
 # Usage: --build-arg REGISTRY_HOST=artifactory.algol60.net/docker.io/library/
-ARG REGISTRY_HOST=artifactory.algol60.net/docker.io/library/
+ARG REGISTRY_HOST=bikeshack.azurecr.io/library/
 
 # Final stage is the actual container we will run
-FROM ${REGISTRY_HOST}alpine:3.15
+FROM cgr.dev/chainguard/wolfi-base
 
 # Labels make it easier to troubleshoot the container http://label-schema.org/rc1/
 LABEL schema-version org.label-schema.schema-version="1.0" 
